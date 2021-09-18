@@ -19,9 +19,11 @@ func main() {
 	xi := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	total := sum(xi...)  // unrolling
 	fmt.Println("the total is:", total)
-
+	sum()
 	// let's look at defer
 	functionDefer()
+	defer fooDefer()
+	barDefer()
 }
 
 func basicSyntax() {
@@ -70,6 +72,7 @@ func myInterfacePrint(x ...interface{}) {
 
 func sum(x ...int) int {
 	s := 0
+	fmt.Printf("sum variadic parameter: %v cap:%v len:%v\n", x, cap(x), len(x))
 	for i, v := range x {
 		s += v
 		fmt.Printf("index %d: add %d to get a total of %d\n", i, v, s)
@@ -77,4 +80,21 @@ func sum(x ...int) int {
 	return s
 }
 
-func functionDefer() {}
+func functionDefer() {
+	fmt.Println("\n### Defer Functions ###")
+	fmt.Println("this means to break up the code from one big tightly " +
+		"coupled piece of code and breaking modular chunks.")
+	fmt.Println("in the example, we have\n" +
+		"> defer fooDefer()\n" +
+		"> barDefer()\n" +
+		"and fooDefer is only called at the end of func main as it is " +
+		"deferred to the end of that function or block")
+	fmt.Printf("#######\n\n")
+}
+
+func fooDefer() {
+	fmt.Println("fooDefer")
+}
+func barDefer() {
+	fmt.Println("barDefer")
+}
