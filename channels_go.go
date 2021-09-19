@@ -10,6 +10,7 @@ func main() {
 	channelBuffers()
 	directionalChannels()
 	channelAndRange()
+	channelsAndSelect()
 }
 
 func understandingChannels() {
@@ -119,5 +120,46 @@ func receiveChRange(c <- chan int) {
 
 	for v := range c {
 		fmt.Println("Print from Channel and Range:", v)
+	}
+}
+
+func channelsAndSelect() {
+	fmt.Println("\n### Channels and Select ###")
+	fmt.Println("is used to pull values off of channels.")
+	even := make(chan int)
+	odd := make(chan int)
+	quit := make(chan int)
+
+	// send
+	go sendChSelect(even, odd, quit)
+
+	// receive
+	receiveChSelect(even, odd, quit)
+
+	fmt.Println("\n######")
+}
+
+func sendChSelect(e, o, q chan <- int) {
+	for i := 0; i < 10; i++ {
+		if (i % 2) == 0 {
+			e <- i
+		} else {
+			o <- i
+		}
+	}
+	q <- 0
+}
+
+func receiveChSelect(e, o, q <- chan int) {
+	for {
+		select {
+		case ev := <- e:
+			fmt.Println("even channel from select:", ev)
+		case ov := <- o:
+			fmt.Println("odd  channel from select:", ov)
+		case qv := <- q:
+			fmt.Println("quit channel from select:", qv)
+			return
+		}
 	}
 }
