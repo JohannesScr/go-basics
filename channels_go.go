@@ -1,12 +1,15 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func main() {
 	fmt.Println("### Channels ###")
 	understandingChannels()
 	channelBuffers()
 	directionalChannels()
+	channelAndRange()
 }
 
 func understandingChannels() {
@@ -91,4 +94,30 @@ func sendChannel(c chan <- int) {
 func receiveChannel(c <- chan int) {
 	// here the channel is only receive
 	fmt.Println(<-c)
+}
+
+func channelAndRange() {
+	fmt.Println("\n### Channels and Range ###")
+	fmt.Println("with the range, if you do not close the channel, the\n" +
+		"range will try to read from a channel and go into deadlock.\n" +
+		"therefore you need to close the channel to prevent the channel\n" +
+		"from going into deadlock.")
+	ch := make(chan int)
+	go sendChRange(ch)
+	receiveChRange(ch)
+	fmt.Println("\n######")
+}
+
+func sendChRange(c chan <- int) {
+	for i := 0; i < 5; i++ {
+		c <- i
+	}
+	close(c)  // close the channel
+}
+
+func receiveChRange(c <- chan int) {
+
+	for v := range c {
+		fmt.Println("Print from Channel and Range:", v)
+	}
 }
