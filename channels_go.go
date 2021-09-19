@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"sync"
+	"time"
 )
 
 func main() {
@@ -13,6 +15,7 @@ func main() {
 	channelAndRange()
 	channelsAndSelect()
 	channelFanIn()
+	channelsFanOut()
 }
 
 func understandingChannels() {
@@ -174,6 +177,9 @@ func receiveChSelect(e, o <-chan int, q <-chan int) {
 
 func channelFanIn() {
 	fmt.Println("\n### Channels Fan In ###")
+	fmt.Println("take a chunk of work, split it into many goroutines\n" +
+		"then put the output back onto a single channel to bring it all\n" +
+		"back together.")
 	chOdd := make(chan int)
 	chEven := make(chan int)
 	chFanIn := make(chan int)
@@ -203,19 +209,19 @@ func sendChFanIn(odd, even chan<- int) {
 	close(odd)
 }
 
-func receiveChFanIn(odd, even <- chan int, fanin chan <- int) {
+func receiveChFanIn(odd, even <-chan int, fanin chan<- int) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
 	// read from the even channel
-	go func(){
+	go func() {
 		for v := range even {
 			fanin <- v
 		}
 		wg.Done()
 	}()
 	// read from the even channel
-	go func(){
+	go func() {
 		for v := range odd {
 			fanin <- v
 		}
@@ -225,5 +231,47 @@ func receiveChFanIn(odd, even <- chan int, fanin chan <- int) {
 	close(fanin)
 }
 
+func channelsFanOut() {
+	fmt.Println("\n### Channels Fan In ###")
+	fmt.Println("fan out is when you have a chunk of work to do, but\n" +
+		"they can happen independently. then you can fan out the work to\n" +
+		"many goroutines.")
 
+	c1 := make(chan int) // for fanning out
+	c2 := make(chan int) // for fanning in
+	go populate(c1)
 
+	go fanOutIn(c1, c2)
+
+	for v := range c2 {
+		fmt.Println(v)
+	}
+
+	fmt.Println("\n######")
+}
+
+func populate(c chan int) {
+	for i := 0; i < 20; i++ {
+		c <- i
+	}
+	close(c)
+}
+
+func fanOutIn(c1, c2 chan int) {
+	var wg sync.WaitGroup
+	for v := range c1 {
+		wg.Add(1)
+		// fanning out into multiple go routines
+		go func(v2 int){
+			c2 <- timeConsumingWork(v2)
+			wg.Done()
+		}(v)
+	}
+	wg.Wait()
+	close(c2)
+}
+
+func timeConsumingWork(x int) int {
+	time.Sleep(time.Millisecond * time.Duration(rand.Intn(500)))
+	return x + rand.Intn(1000)
+}
