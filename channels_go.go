@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 )
 
 func main() {
@@ -11,6 +12,7 @@ func main() {
 	directionalChannels()
 	channelAndRange()
 	channelsAndSelect()
+	channelFanIn()
 }
 
 func understandingChannels() {
@@ -88,11 +90,11 @@ func directionalChannels() {
 	fmt.Println("\n######")
 }
 
-func sendChannel(c chan <- int) {
+func sendChannel(c chan<- int) {
 	// here the channel is only send
 	c <- 12
 }
-func receiveChannel(c <- chan int) {
+func receiveChannel(c <-chan int) {
 	// here the channel is only receive
 	fmt.Println(<-c)
 }
@@ -109,14 +111,14 @@ func channelAndRange() {
 	fmt.Println("\n######")
 }
 
-func sendChRange(c chan <- int) {
+func sendChRange(c chan<- int) {
 	for i := 0; i < 5; i++ {
 		c <- i
 	}
-	close(c)  // close the channel
+	close(c) // close the channel
 }
 
-func receiveChRange(c <- chan int) {
+func receiveChRange(c <-chan int) {
 
 	for v := range c {
 		fmt.Println("Print from Channel and Range:", v)
@@ -139,7 +141,7 @@ func channelsAndSelect() {
 	fmt.Println("\n######")
 }
 
-func sendChSelect(e, o, q chan <- int) {
+func sendChSelect(e, o chan<- int, q chan<- int) {
 	for i := 0; i < 10; i++ {
 		if (i % 2) == 0 {
 			e <- i
@@ -147,19 +149,81 @@ func sendChSelect(e, o, q chan <- int) {
 			o <- i
 		}
 	}
-	q <- 0
+	close(q)
 }
 
-func receiveChSelect(e, o, q <- chan int) {
+func receiveChSelect(e, o <-chan int, q <-chan int) {
 	for {
 		select {
-		case ev := <- e:
-			fmt.Println("even channel from select:", ev)
-		case ov := <- o:
-			fmt.Println("odd  channel from select:", ov)
-		case qv := <- q:
-			fmt.Println("quit channel from select:", qv)
-			return
+		case ev, ok := <-e:
+			fmt.Println("even channel from select:", ev, ok)
+		case ov, ok := <-o:
+			fmt.Println("odd  channel from select:", ov, ok)
+		case qv, ok := <-q:
+			if !ok {
+				fmt.Println("ok denotes if the channel is open")
+				fmt.Println("comma ok, quit channel from select:", qv, ok)
+				return
+			} else {
+				fmt.Println("comma ok, quit channel from select:", qv, ok)
+			}
+
 		}
 	}
 }
+
+func channelFanIn() {
+	fmt.Println("\n### Channels Fan In ###")
+	chOdd := make(chan int)
+	chEven := make(chan int)
+	chFanIn := make(chan int)
+
+	// send
+	go sendChFanIn(chOdd, chEven)
+
+	// receive
+	go receiveChFanIn(chOdd, chEven, chFanIn)
+
+	for v := range chFanIn {
+		fmt.Println("from fan in channel:", v)
+	}
+
+	fmt.Println("\n######")
+}
+
+func sendChFanIn(odd, even chan<- int) {
+	for i := 0; i < 10; i++ {
+		if (i % 2) == 0 {
+			even <- i
+		} else {
+			odd <- i
+		}
+	}
+	close(even)
+	close(odd)
+}
+
+func receiveChFanIn(odd, even <- chan int, fanin chan <- int) {
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// read from the even channel
+	go func(){
+		for v := range even {
+			fanin <- v
+		}
+		wg.Done()
+	}()
+	// read from the even channel
+	go func(){
+		for v := range odd {
+			fanin <- v
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	close(fanin)
+}
+
+
+
