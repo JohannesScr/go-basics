@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -9,19 +10,19 @@ import (
 )
 
 func setupLog() *os.File {
-	//create out log output file
+	fmt.Println("create out log output file")
 	f, err := os.Create(".log.txt")
 	if err != nil {
 		fmt.Println("log file error:", err)
 	}
 	log.SetOutput(f)
 
-	defer func() {
-		fmt.Println("I am running defer")
-		if err := f.Close(); err != nil {
-			panic(err)
-		}
-	}()
+	//defer func() {
+	//	fmt.Println("I am running defer")
+	//	if err := f.Close(); err != nil {
+	//		panic(err)
+	//	}
+	//}()
 
 	return f
 }
@@ -36,7 +37,8 @@ func main() {
 	checkingErrors()
 	//scanErr()
 	//openFileErr()
-	errorTypesAndLogs()
+	//errorTypesAndLogs()
+	newErrorExample()
 }
 
 func understandingErrorHanding() {
@@ -116,4 +118,21 @@ func errorTypesAndLogs() {
 		//panic(err)
 	}
 	fmt.Println("\n######")
+}
+
+func newErrorExample() {
+	fmt.Println("\n### New Custom Error Example ###")
+	_, err := sqrt(-10)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Println("\n######")
+}
+
+func sqrt(f float64) (float64, error) {
+	if f < 0 {
+		return 0, errors.New("norgate math: square root of negative number")
+	}
+	return 42, nil
 }
